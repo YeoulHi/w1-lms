@@ -9,6 +9,14 @@
 - Always choose the simplest solution that meets the acceptance criteria.
 
 
+## Data & Schema
+
+- All development must strictly adhere to the database schema defined in `docs/database.md`.
+- This schema, implemented in `supabase/migrations/0002_create_lms_tables.sql`, is the single source of truth for the data model.
+- Do not write code that relies on data structures or columns not present in the defined schema.
+- Any proposed changes to the schema must be discussed and implemented via a new SQL migration file.
+
+
 ## Must
 
 - always use client component for all components. (use `use client` directive)
