@@ -31,11 +31,11 @@
 상태 값을 관리하고 데이터 무결성을 보장하기 위해 아래와 같은 ENUM 타입을 먼저 정의합니다.
 
 ```sql
-CREATE TYPE user_role AS ENUM ('''learner''', '''instructor''');
-CREATE TYPE course_status AS ENUM ('''draft''', '''published''', '''archived''');
-CREATE TYPE assignment_status AS ENUM ('''draft''', '''published''', '''closed''');
-CREATE TYPE enrollment_status AS ENUM ('''active''', '''cancelled''');
-CREATE TYPE submission_status AS ENUM ('''submitted''', '''resubmission_required''', '''graded''');
+CREATE TYPE user_role AS ENUM ('learner', 'instructor');
+CREATE TYPE course_status AS ENUM ('draft', 'published', 'archived');
+CREATE TYPE assignment_status AS ENUM ('draft', 'published', 'closed');
+CREATE TYPE enrollment_status AS ENUM ('active', 'cancelled');
+CREATE TYPE submission_status AS ENUM ('submitted', 'resubmission_required', 'graded');
 ```
 
 ### 2.2. `profiles`
