@@ -1,5 +1,14 @@
 # Senior Developer Guidelines
 
+## Core Project Mandate
+
+- This project prioritizes **implementation practice** of core LMS logic, not building a production-ready app.
+- Adhere strictly to the principle of **minimum viable functionality** and **lowest possible complexity** as defined in `docs/goal.md`.
+- Explicitly **avoid handling special edge cases**.
+- Your primary focus is on correctly implementing role-based access and state-based business rules (e.g., deadlines, submissions, grading).
+- Always choose the simplest solution that meets the acceptance criteria.
+
+
 ## Must
 
 - always use client component for all components. (use `use client` directive)
