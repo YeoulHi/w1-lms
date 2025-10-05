@@ -174,4 +174,28 @@ investigation_process:
   5_document:
     record: "Add to this checklist if new pattern"
     prevent: "Update coding standards"
+
+toost_not_showing:
+  symptom: "useToast() 호출했지만 토스트 메시지가 표시되지 않음"
+  
+  checklist:
+    1_toaster_component:
+      - "✓ <Toaster /> 컴포넌트가 layout.tsx에 추가되었는가?"
+      - "✓ import { Toaster } from '@/components/ui/toaster' 확인"
+    
+    2_callback_override:
+      - "✓ mutate(data, { onSuccess }) 형태로 로컬 콜백을 전달하고 있는가?"
+      - "✓ Hook의 onSuccess가 실행되지 않고 있는가?"
+    
+    3_console_debug:
+      - "✓ Hook의 onSuccess에 console.log 추가하여 실행 여부 확인"
+      - "✓ API 응답이 성공(200 OK)인지 Network 탭에서 확인"
+    
+    4_variable_scope:
+      - "✓ Hook 콜백에서 참조하는 변수가 선언되기 전에 사용되지 않았는가?"
+
+  quick_fix:
+    - "app/layout.tsx에 <Toaster /> 추가"
+    - "mutate() 호출 시 로컬 onSuccess 제거"
+    - "변수 선언 순서 검토"
 ```
