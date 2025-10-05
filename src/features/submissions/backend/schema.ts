@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { assignmentStatusSchema } from '@/features/assignments/backend/schema';
 
 export const submissionStatusSchema = z.enum([
   'submitted',
@@ -30,6 +31,7 @@ export const assignmentSummarySchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
   course_id: z.string().uuid(),
+  status: assignmentStatusSchema,
 });
 
 export const assignmentSubmissionItemSchema = z.object({
@@ -57,3 +59,4 @@ export type AssignmentSubmissionItem = z.infer<typeof assignmentSubmissionItemSc
 export type AssignmentSubmissionsResponse = z.infer<
   typeof assignmentSubmissionsResponseSchema
 >;
+

@@ -2,16 +2,19 @@ import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient, extractApiErrorMessage } from '@/lib/remote/api-client';
 import { useToast } from '@/hooks/use-toast';
-import type { AssignmentSubmissionsResponse } from '../lib/dto';
+import {
+  assignmentSubmissionsResponseSchema,
+  type AssignmentSubmissionsResponse,
+} from '../lib/dto';
 
 const fetchAssignmentSubmissions = async (
   assignmentId: string,
 ): Promise<AssignmentSubmissionsResponse> => {
-  const response = await apiClient.get<{ data: AssignmentSubmissionsResponse }>(
+  const { data } = await apiClient.get(
     `/api/assignments/${assignmentId}/submissions`,
   );
 
-  return response.data.data;
+  return assignmentSubmissionsResponseSchema.parse(data);
 };
 
 export const useSubmissionsByAssignment = (assignmentId: string) => {

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { assignmentStatusSchema } from '@/features/assignments/backend/schema';
 import type { HandlerResult } from '@/backend/http/response';
 import { failure, success } from '@/backend/http/response';
 import {
@@ -27,6 +28,7 @@ const assignmentWithCourseSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
   course_id: z.string().uuid(),
+  status: assignmentStatusSchema,
   courses: z.object({
     instructor_id: z.string().uuid(),
   }),
@@ -62,6 +64,7 @@ export async function getAssignmentSubmissionsService(
         id,
         title,
         course_id,
+        status,
         courses!assignments_course_id_fkey(
           instructor_id
         )
@@ -125,6 +128,7 @@ export async function getAssignmentSubmissionsService(
       id: assignment.id,
       title: assignment.title,
       course_id: assignment.course_id,
+      status: assignment.status,
     },
     submissions: submissions.map((submission: SubmissionWithProfile) => ({
       id: submission.id,
@@ -269,3 +273,5 @@ export async function requestResubmissionService(
 
   return success(validationResult.data, 200);
 }
+
+

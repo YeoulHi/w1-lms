@@ -3,6 +3,11 @@
 import { use, useMemo, useState } from 'react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { PublishAssignmentButton } from '@/features/assignments/components/PublishAssignmentButton';
+import {
+  ASSIGNMENT_STATUS,
+  type AssignmentStatus,
+} from '@/features/assignments/lib/dto';
 import {
   Sheet,
   SheetContent,
@@ -20,6 +25,18 @@ interface PageParams {
   courseId: string;
   assignmentId: string;
 }
+
+const assignmentStatusLabelMap: Record<AssignmentStatus, string> = {
+  [ASSIGNMENT_STATUS.DRAFT]: '초안',
+  [ASSIGNMENT_STATUS.PUBLISHED]: '게시됨',
+  [ASSIGNMENT_STATUS.CLOSED]: '마감됨',
+};
+
+const assignmentStatusVariantMap: Record<AssignmentStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  [ASSIGNMENT_STATUS.DRAFT]: 'outline',
+  [ASSIGNMENT_STATUS.PUBLISHED]: 'default',
+  [ASSIGNMENT_STATUS.CLOSED]: 'secondary',
+};
 
 const statusLabelMap: Record<SubmissionStatus, string> = {
   submitted: '제출 완료',
@@ -103,11 +120,27 @@ export default function AssignmentSubmissionsPage({
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-semibold">제출물 목록</h1>
-        <p className="text-slate-600">
-          {data?.assignment.title ?? '과제 정보를 불러오는 중입니다.'}
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold">제출물 목록</h1>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-600">
+            <span>{data?.assignment.title ?? '과제 정보를 불러오는 중입니다.'}</span>
+            {data?.assignment && (
+              <Badge variant={assignmentStatusVariantMap[data.assignment.status]}>
+                {assignmentStatusLabelMap[data.assignment.status]}
+              </Badge>
+            )}
+          </div>
+        </div>
+        {data?.assignment.status === ASSIGNMENT_STATUS.DRAFT && (
+          <PublishAssignmentButton
+            assignmentId={assignmentId}
+            disabled={isLoading || isFetching}
+            onPublished={() => {
+              void refetch();
+            }}
+          />
+        )}
       </header>
 
       <section className="rounded-xl border border-slate-200 bg-white">
@@ -181,3 +214,7 @@ export default function AssignmentSubmissionsPage({
     </div>
   );
 }
+
+
+
+
