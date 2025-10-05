@@ -4,23 +4,22 @@ import { apiClient, extractApiErrorMessage } from '@/lib/remote/api-client';
 import { useToast } from '@/hooks/use-toast';
 import type { AssignmentSubmissionsResponse } from '../lib/dto';
 
+const fetchAssignmentSubmissions = async (
+  assignmentId: string,
+): Promise<AssignmentSubmissionsResponse> => {
+  const response = await apiClient.get<{ data: AssignmentSubmissionsResponse }>(
+    `/api/assignments/${assignmentId}/submissions`,
+  );
+
+  return response.data.data;
+};
+
 export const useSubmissionsByAssignment = (assignmentId: string) => {
   const { toast } = useToast();
 
-  const queryResult = useQuery<
-    AssignmentSubmissionsResponse,
-    Error,
-    AssignmentSubmissionsResponse,
-    [string, string]
-  >({
+  const queryResult = useQuery<AssignmentSubmissionsResponse>({
     queryKey: ['submissions', assignmentId],
-    queryFn: async () => {
-      const response = await apiClient.get<{ data: AssignmentSubmissionsResponse }>(
-        `/api/assignments/${assignmentId}/submissions`,
-      );
-
-      return response.data.data || response.data;
-    },
+    queryFn: () => fetchAssignmentSubmissions(assignmentId),
     enabled: Boolean(assignmentId),
     staleTime: 60_000,
     retry: 1,
