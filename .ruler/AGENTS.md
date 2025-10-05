@@ -17,73 +17,107 @@
 - Any proposed changes to the schema must be discussed and implemented via a new SQL migration file.
 
 
+## Core Architecture & Libraries
+```yaml
+libraries:
+  date-fns: "For efficient date and time handling."
+  ts-pattern: "For clean and type-safe branching logic."
+  '@tanstack/react-query': "For server state management."
+  zustand: "For lightweight global state management."
+  react-use: "For commonly needed React hooks."
+  'es-toolkit': "For robust utility functions."
+  'lucide-react': "For customizable icons."
+  zod: "For schema validation and data integrity."
+  'shadcn-ui': "For pre-built accessible UI components."
+  tailwindcss: "For utility-first CSS styling."
+  supabase: "For a backend-as-a-service solution."
+  'react-hook-form': "For form validation and state management."
+
+directory_structure:
+  - src:
+    - app: "Next.js App Routers"
+      - "api/[[...hono]]": "Hono entrypoint delegated to Next.js Route Handler"
+    - backend:
+      - hono: "Hono app body (app.ts, context.ts)"
+      - middleware: "Common middleware (error, context, Supabase, etc.)"
+      - http: "Common HTTP layer (response format, handler utils)"
+      - supabase: "Supabase client and config wrappers"
+      - config: "Environment variable parsing and caching"
+    - features:
+      - "[featureName]":
+        - "backend/route.ts": "Hono router definition"
+        - "backend/service.ts": "Supabase/business logic"
+        - "backend/schema.ts": "Request/response Zod schemas"
+        - "components/*": "Components for specific feature"
+        - "hooks/*": "Hooks for specific feature"
+        - "lib/*": "Client-side DTO re-export, etc."
+  - supabase:
+    - migrations: "Supabase SQL migration files"
+```
+
+## Backend Logic (Hono + Next.js)
+
+- Next.js `app` 라우터에서 `src/app/api/[[...hono]]/route.ts` 를 통해 Hono 앱을 위임합니다. 모든 HTTP 메서드는 `handle(createHonoApp())` 로 노출하며 `runtime = 'nodejs'` 로 Supabase service-role 키를 사용합니다.
+- `src/backend/hono/app.ts` 의 `createHonoApp` 은 다음 빌딩블록을 순서대로 연결합니다.
+```yaml
+hono_app_setup:
+  1_middleware: "errorBoundary() – Common error logging and 5xx response normalization."
+  2_middleware: "withAppContext() – Zod-based env parsing, logger, and config injection via c.set."
+  3_middleware: "withSupabase() – Per-request injection of the Supabase server client (service-role key)."
+  4_routes: "registerExampleRoutes(app), etc. – Feature-specific router registration."
+```
+- `src/backend/hono/context.ts` 의 `AppEnv` 는 `c.get`/`c.var` 로 접근 가능한 `supabase`, `logger`, `config` 키를 제공합니다. 절대 `c.env` 를 직접 수정하지 않습니다.
+- 공통 HTTP 응답 헬퍼는 `src/backend/http/response.ts`에서 제공하며, 모든 라우터/서비스는 `success`/`failure`/`respond` 패턴을 사용합니다.
+- 프론트엔드 레이어는 전부 Client Component (`"use client"`) 로 유지하고, 서버 상태는 `@tanstack/react-query` 로만 관리합니다.
+
+## 핵심 개발 워크플로우 (Logic)
+```
+FUNCTION create_feature(featureName):
+  → CREATE_DIR `src/features/{featureName}`
+
+  → // Backend
+  → CREATE_FILE `backend/schema.ts`:
+    - Define request/response Zod schemas.
+  → CREATE_FILE `backend/service.ts`:
+    - Implement business logic requiring DB access.
+    - On rule violation, return failure(4xx, code, message).
+  → CREATE_FILE `backend/route.ts`:
+    - Validate request with schema.
+    - Call service and respond with result.
+  → UPDATE_FILE `src/backend/hono/app.ts`:
+    - Register new feature route.
+
+  → // Frontend
+  → CREATE_FILE `hooks/use{Action}.ts`:
+    - Implement `useMutation` for POST/PUT/DELETE.
+    - `onSuccess`: show toast with success message.
+    - `onError`: show toast with API error message.
+  → CREATE_FILE `components/{Component}.tsx`:
+    - Use the hook for logic.
+    - Handle `isPending` state for UI feedback.
+
+  → // API Call
+  → ENSURE all FE->BE calls use `api-client`.
+```
+
+## Tooling & Commands
+```yaml
+tooling:
+  package_manager: "npm"
+  shadcn-ui:
+    instruction: "If a new component is needed, provide the installation command."
+    example: "npx shadcn@latest add card"
+  supabase:
+    instruction: "If a new table is needed, create a migration SQL file in /supabase/migrations/."
+    constraint: "Do not run supabase locally."
+```
+
 ## Must
 
 - always use client component for all components. (use `use client` directive)
 - always use promise for page.tsx params props.
 - use valid picsum.photos stock image for placeholder image
 - route feature hooks' HTTP requests through `@/lib/remote/api-client`.
-
-## Library
-
-use following libraries for specific functionalities:
-
-1. `date-fns`: For efficient date and time handling.
-2. `ts-pattern`: For clean and type-safe branching logic.
-3. `@tanstack/react-query`: For server state management.
-4. `zustand`: For lightweight global state management.
-5. `react-use`: For commonly needed React hooks.
-6. `es-toolkit`: For robust utility functions.
-7. `lucide-react`: For customizable icons.
-8. `zod`: For schema validation and data integrity.
-9. `shadcn-ui`: For pre-built accessible UI components.
-10. `tailwindcss`: For utility-first CSS styling.
-11. `supabase`: For a backend-as-a-service solution.
-12. `react-hook-form`: For form validation and state management.
-
-## Directory Structure
-
-- src
-- src/app: Next.js App Routers
-- src/app/api/[[...hono]]: Hono entrypoint delegated to Next.js Route Handler (`handle(createHonoApp())`)
-- src/backend/hono: Hono 앱 본체 (`app.ts`, `context.ts`)
-- src/backend/middleware: 공통 미들웨어 (에러, 컨텍스트, Supabase 등)
-- src/backend/http: 응답 포맷, 핸들러 결과 유틸 등 공통 HTTP 레이어
-- src/backend/supabase: Supabase 클라이언트 및 설정 래퍼
-- src/backend/config: 환경 변수 파싱 및 캐싱
-- src/components/ui: shadcn-ui components
-- src/constants: Common constants
-- src/hooks: Common hooks
-- src/lib: utility functions
-- src/remote: http client
-- src/features/[featureName]/components/\*: Components for specific feature
-- src/features/[featureName]/constants/\*
-- src/features/[featureName]/hooks/\*
-- src/features/[featureName]/backend/route.ts: Hono 라우터 정의
-- src/features/[featureName]/backend/service.ts: Supabase/비즈니스 로직
-- src/features/[featureName]/backend/error.ts: 상황별 error code 정의
-- src/features/[featureName]/backend/schema.ts: 요청/응답 zod 스키마 정의
-- src/features/[featureName]/lib/\*: 클라이언트 측 DTO 재노출 등
-- supabase/migrations: Supabase SQL migration 파일 (예시 테이블 포함)
-
-## Backend Layer (Hono + Next.js)
-
-- Next.js `app` 라우터에서 `src/app/api/[[...hono]]/route.ts` 를 통해 Hono 앱을 위임한다. 모든 HTTP 메서드는 `handle(createHonoApp())` 로 노출하며 `runtime = 'nodejs'` 로 Supabase service-role 키를 사용한다.
-- `src/backend/hono/app.ts` 의 `createHonoApp` 은 싱글턴으로 관리하며 다음 빌딩블록을 순서대로 연결한다.
-  1. `errorBoundary()` – 공통 에러 로깅 및 5xx 응답 정규화.
-  2. `withAppContext()` – `zod` 기반 환경 변수 파싱, 콘솔 기반 logger, 설정을 `c.set` 으로 주입.
-  3. `withSupabase()` – service-role 키로 생성한 Supabase 서버 클라이언트를 per-request로 주입.
-  4. `registerExampleRoutes(app)` 등 기능별 라우터 등록 (모든 라우터는 `src/features/[feature]/backend/route.ts` 에서 정의).
-- `src/backend/hono/context.ts` 의 `AppEnv` 는 `c.get`/`c.var` 로 접근 가능한 `supabase`, `logger`, `config` 키를 제공한다. 절대 `c.env` 를 직접 수정하지 않는다.
-- 공통 HTTP 응답 헬퍼는 `src/backend/http/response.ts`에서 제공하며, 모든 라우터/서비스는 `success`/`failure`/`respond` 패턴을 사용한다.
-- 기능별 백엔드 로직은 `src/features/[feature]/backend/service.ts`(Supabase 접근), `schema.ts`(요청/응답 zod 정의), `route.ts`(Hono 라우터)로 분리한다.
-- 프런트엔드가 동일 스키마를 사용할 경우 `src/features/[feature]/lib/dto.ts`에서 backend/schema를 재노출해 React Query 훅 등에서 재사용한다.
-- 새 테이블이나 시드 데이터는 반드시 `supabase/migrations` 에 SQL 파일로 추가하고, Supabase에 적용 여부를 사용자에게 위임한다.
-- 프론트엔드 레이어는 전부 Client Component (`"use client"`) 로 유지하고, 서버 상태는 `@tanstack/react-query` 로만 관리한다.
-
-## 핵심 개발 워크플로우
-
-모든 기능은 `features/{name}` 모듈로 구현하며, 명세 기반의 오류 처리를 준수합니다. 백엔드는 `route`에서 요청을 검증하고 `service`에서 비즈니스 로직을 처리하며, 규칙 위반 시 4xx 오류를 반환합니다. 프론트엔드는 `useMutation` 훅으로 API를 호출하고, `isPending` 상태 처리 및 `toast` 피드백을 제공합니다. 모든 API 통신은 타입-세이프 `api-client`를 사용해야 합니다.
 
 ## Solution Process:
 
@@ -135,81 +169,6 @@ use following libraries for specific functionalities:
 7. Minimal Changes
 8. Pure Functions
 9. Composition over inheritance
-
-## Functional Programming:
-
-- Avoid Mutation
-- Use Map, Filter, Reduce
-- Currying and Partial Application
-- Immutability
-
-## Code-Style Guidelines
-
-- Use TypeScript for type safety.
-- Follow the coding standards defined in the ESLint configuration.
-- Ensure all components are responsive and accessible.
-- Use Tailwind CSS for styling, adhering to the defined color palette.
-- When generating code, prioritize TypeScript and React best practices.
-- Ensure that any new components are reusable and follow the existing design patterns.
-- Minimize the use of AI generated comments, instead use clearly named variables and functions.
-- Always validate user inputs and handle errors gracefully.
-- Use the existing components and pages as a reference for the new components and pages.
-
-## Performance:
-
-- Avoid Premature Optimization
-- Profile Before Optimizing
-- Optimize Judiciously
-- Document Optimizations
-
-## Comments & Documentation:
-
-- Comment function purpose
-- Use JSDoc for JS
-- Document "why" not "what"
-
-## Function Ordering:
-
-- Higher-order functionality first
-- Group related functions
-
-## Handling Bugs:
-
-- Use TODO: and FIXME: comments
-
-## Error Handling:
-
-- Use appropriate techniques
-- Prefer returning errors over exceptions
-
-## Testing:
-
-- Unit tests for core functionality
-- Consider integration and end-to-end tests
-
-## Next.js
-
-- you must use promise for page.tsx params props.
-
-## Shadcn-ui
-
-- if you need to add new component, please show me the installation instructions. I'll paste it into terminal.
-- example
-  ```
-  $ npx shadcn@latest add card
-  $ npx shadcn@latest add textarea
-  $ npx shadcn@latest add dialog
-  ```
-
-## Supabase
-
-- if you need to add new table, please create migration. I'll paste it into supabase.
-- do not run supabase locally
-- store migration query for `.sql` file. in /supabase/migrations/
-
-## Package Manager
-
-- use npm as package manager.
 
 ## Korean Text
 
