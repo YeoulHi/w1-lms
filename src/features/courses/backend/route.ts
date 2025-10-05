@@ -26,6 +26,9 @@ export const registerCoursesRoutes = (app: Hono<AppEnv>) => {
     const authHeader = c.req.header('Authorization');
     const accessToken = authHeader?.replace('Bearer ', '');
 
+    logger.info('[Courses] Authorization header:', authHeader ? 'Present' : 'Missing');
+    logger.info('[Courses] Access token:', accessToken ? `${accessToken.substring(0, 20)}...` : 'Missing');
+
     if (!accessToken) {
       return respond(
         c,
@@ -50,7 +53,10 @@ export const registerCoursesRoutes = (app: Hono<AppEnv>) => {
       error: authError,
     } = await supabase.auth.getUser();
 
+    logger.info('[Courses] Auth result:', { user: user ? user.id : null, error: authError?.message });
+
     if (authError || !user) {
+      logger.error('[Courses] Authentication failed:', authError?.message || 'No user');
       return respond(
         c,
         failure(
@@ -60,6 +66,8 @@ export const registerCoursesRoutes = (app: Hono<AppEnv>) => {
         ),
       );
     }
+
+    logger.info('[Courses] User authenticated:', user.id);
 
     // Check if user is an instructor
     const { data: profile, error: profileError } = await supabase
@@ -79,6 +87,8 @@ export const registerCoursesRoutes = (app: Hono<AppEnv>) => {
         ),
       );
     }
+
+    logger.info('[Courses] User role:', profile.role);
 
     if (profile.role !== 'instructor') {
       return respond(
@@ -122,6 +132,7 @@ export const registerCoursesRoutes = (app: Hono<AppEnv>) => {
       return respond(c, result);
     }
 
+    logger.info('[Courses] Course created successfully');
     return respond(c, result);
   });
 };

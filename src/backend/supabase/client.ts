@@ -30,15 +30,16 @@ export const createAnonClient = ({
   const client = createClient(url, anonKey, {
     auth: {
       persistSession: false,
+      autoRefreshToken: false,
+    },
+    global: {
+      headers: accessToken
+        ? {
+            Authorization: `Bearer ${accessToken}`,
+          }
+        : {},
     },
   });
-
-  if (accessToken) {
-    client.auth.setSession({
-      access_token: accessToken,
-      refresh_token: '',
-    });
-  }
 
   return client;
 };
