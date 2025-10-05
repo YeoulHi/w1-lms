@@ -5,10 +5,11 @@ import {
   type ErrorResult,
 } from '@/backend/http/response';
 import {
+  getConfig,
   getLogger,
-  getSupabase,
   type AppEnv,
 } from '@/backend/hono/context';
+import { createAnonClient } from '@/backend/supabase/client';
 import { CreateCourseRequestSchema } from '@/features/courses/backend/schema';
 import { createCourseService } from './service';
 import {
@@ -18,8 +19,30 @@ import {
 
 export const registerCoursesRoutes = (app: Hono<AppEnv>) => {
   app.post('/courses', async (c) => {
-    const supabase = getSupabase(c);
     const logger = getLogger(c);
+    const config = getConfig(c);
+
+    // Extract access token from Authorization header
+    const authHeader = c.req.header('Authorization');
+    const accessToken = authHeader?.replace('Bearer ', '');
+
+    if (!accessToken) {
+      return respond(
+        c,
+        failure(
+          401,
+          coursesErrorCodes.unauthorized,
+          '인증 토큰이 필요합니다.',
+        ),
+      );
+    }
+
+    // Create anon client with user's access token
+    const supabase = createAnonClient({
+      url: config.supabase.url,
+      anonKey: config.supabase.anonKey,
+      accessToken,
+    });
 
     // Get authenticated user from Supabase
     const {

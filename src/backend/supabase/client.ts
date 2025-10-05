@@ -15,3 +15,30 @@ export const createServiceClient = ({
       persistSession: false,
     },
   });
+
+export type AnonClientConfig = {
+  url: string;
+  anonKey: string;
+  accessToken?: string;
+};
+
+export const createAnonClient = ({
+  url,
+  anonKey,
+  accessToken,
+}: AnonClientConfig): SupabaseClient => {
+  const client = createClient(url, anonKey, {
+    auth: {
+      persistSession: false,
+    },
+  });
+
+  if (accessToken) {
+    client.auth.setSession({
+      access_token: accessToken,
+      refresh_token: '',
+    });
+  }
+
+  return client;
+};
