@@ -81,6 +81,10 @@ use following libraries for specific functionalities:
 - 새 테이블이나 시드 데이터는 반드시 `supabase/migrations` 에 SQL 파일로 추가하고, Supabase에 적용 여부를 사용자에게 위임한다.
 - 프론트엔드 레이어는 전부 Client Component (`"use client"`) 로 유지하고, 서버 상태는 `@tanstack/react-query` 로만 관리한다.
 
+## 핵심 개발 워크플로우
+
+모든 기능은 `features/{name}` 모듈로 구현하며, 명세 기반의 오류 처리를 준수합니다. 백엔드는 `route`에서 요청을 검증하고 `service`에서 비즈니스 로직을 처리하며, 규칙 위반 시 4xx 오류를 반환합니다. 프론트엔드는 `useMutation` 훅으로 API를 호출하고, `isPending` 상태 처리 및 `toast` 피드백을 제공합니다. 모든 API 통신은 타입-세이프 `api-client`를 사용해야 합니다.
+
 ## Solution Process:
 
 1. Rephrase Input: Transform to clear, professional prompt.
