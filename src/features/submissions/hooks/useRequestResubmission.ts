@@ -7,7 +7,10 @@ interface RequestResubmissionParams {
   submissionId: string;
 }
 
-export const useRequestResubmission = (onSuccessCallback?: () => void) => {
+export const useRequestResubmission = (
+  assignmentId: string,
+  onSuccessCallback?: () => void,
+) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -23,7 +26,7 @@ export const useRequestResubmission = (onSuccessCallback?: () => void) => {
         title: '재제출 요청 완료',
         description: '재제출을 요청했습니다.',
       });
-      queryClient.invalidateQueries({ queryKey: ['submissions'] });
+      queryClient.invalidateQueries({ queryKey: ['submissions', assignmentId] });
       onSuccessCallback?.();
     },
     onError: (error) => {

@@ -11,9 +11,65 @@ import {
 } from '@/backend/hono/context';
 import { createAnonClient } from '@/backend/supabase/client';
 import { gradeSubmissionRequestSchema } from './schema';
-import { gradeSubmissionService, requestResubmissionService } from './service';
+import {
+  getAssignmentSubmissionsService,
+  gradeSubmissionService,
+  requestResubmissionService,
+} from './service';
 
 export const registerSubmissionsRoutes = (app: Hono<AppEnv>) => {
+  // GET /assignments/:assignmentId/submissions - 특정 과제 제출물 목록 조회
+  app.get('/assignments/:assignmentId/submissions', async (c) => {
+    const logger = getLogger(c);
+    const config = getConfig(c);
+    const assignmentId = c.req.param('assignmentId');
+
+    const authHeader = c.req.header('Authorization');
+    const accessToken = authHeader?.replace('Bearer ', '');
+
+    if (!accessToken) {
+      return respond(
+        c,
+        failure(401, 'UNAUTHORIZED', '인증 토큰이 필요합니다.'),
+      );
+    }
+
+    const supabase = createAnonClient({
+      url: config.supabase.url,
+      anonKey: config.supabase.anonKey,
+      accessToken,
+    });
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      logger.error('Auth error:', authError?.message || 'No user found');
+      return respond(
+        c,
+        failure(401, 'UNAUTHORIZED', '인증되지 않은 사용자입니다.'),
+      );
+    }
+
+    const result = await getAssignmentSubmissionsService(
+      supabase,
+      assignmentId,
+      user.id,
+    );
+
+    if (!result.ok) {
+      const errorResult = result as ErrorResult<string, unknown>;
+      logger.error('Failed to fetch assignment submissions', {
+        error: errorResult.error.code,
+        message: errorResult.error.message,
+      });
+    }
+
+    return respond(c, result);
+  });
+
   // PATCH /submissions/:id - 과제 채점
   app.patch('/submissions/:id', async (c) => {
     const logger = getLogger(c);

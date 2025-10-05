@@ -29,10 +29,15 @@ type GradeFormValues = z.infer<typeof gradeFormSchema>;
 
 interface GradeSubmissionFormProps {
   submissionId: string;
+  assignmentId: string;
   onSuccess?: () => void;
 }
 
-export function GradeSubmissionForm({ submissionId, onSuccess }: GradeSubmissionFormProps) {
+export function GradeSubmissionForm({
+  submissionId,
+  assignmentId,
+  onSuccess,
+}: GradeSubmissionFormProps) {
   const form = useForm<GradeFormValues>({
     resolver: zodResolver(gradeFormSchema),
     defaultValues: {
@@ -41,13 +46,16 @@ export function GradeSubmissionForm({ submissionId, onSuccess }: GradeSubmission
     },
   });
 
-  const { mutate: gradeSubmission, isPending: isGrading } = useGradeSubmission(() => {
-    form.reset();
-    onSuccess?.();
-  });
+  const { mutate: gradeSubmission, isPending: isGrading } = useGradeSubmission(
+    assignmentId,
+    () => {
+      form.reset();
+      onSuccess?.();
+    },
+  );
 
   const { mutate: requestResubmission, isPending: isRequestingResubmission } =
-    useRequestResubmission(() => {
+    useRequestResubmission(assignmentId, () => {
       form.reset();
       onSuccess?.();
     });

@@ -8,7 +8,10 @@ interface GradeSubmissionParams {
   data: GradeSubmissionRequest;
 }
 
-export const useGradeSubmission = (onSuccessCallback?: () => void) => {
+export const useGradeSubmission = (
+  assignmentId: string,
+  onSuccessCallback?: () => void,
+) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -25,7 +28,7 @@ export const useGradeSubmission = (onSuccessCallback?: () => void) => {
         title: '채점 완료',
         description: '채점이 완료되었습니다.',
       });
-      queryClient.invalidateQueries({ queryKey: ['submissions'] });
+      queryClient.invalidateQueries({ queryKey: ['submissions', assignmentId] });
       onSuccessCallback?.();
     },
     onError: (error) => {

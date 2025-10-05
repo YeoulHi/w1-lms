@@ -1,8 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { z } from 'zod';
 import type { HandlerResult } from '@/backend/http/response';
 import { failure, success } from '@/backend/http/response';
 import {
+  assignmentSubmissionsResponseSchema,
   gradeSubmissionResponseSchema,
+  submissionStatusSchema,
+  type AssignmentSubmissionsResponse,
   type GradeSubmissionRequest,
   type GradeSubmissionResponse,
 } from './schema';
@@ -13,6 +17,136 @@ type GradingErrorCode =
   | 'ALREADY_GRADED'
   | 'INVALID_STATUS'
   | 'INTERNAL_ERROR';
+
+type AssignmentSubmissionsErrorCode =
+  | 'ASSIGNMENT_NOT_FOUND'
+  | 'UNAUTHORIZED'
+  | 'INTERNAL_ERROR';
+
+const assignmentWithCourseSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  course_id: z.string().uuid(),
+  courses: z.object({
+    instructor_id: z.string().uuid(),
+  }),
+});
+
+const submissionWithProfileSchema = z.object({
+  id: z.string().uuid(),
+  assignment_id: z.string().uuid(),
+  learner_id: z.string().uuid(),
+  submitted_at: z.string(),
+  status: submissionStatusSchema,
+  score: z.number().nullable(),
+  is_late: z.boolean(),
+  feedback: z.string().nullable(),
+  profiles: z.object({
+    name: z.string(),
+  }),
+});
+
+type SubmissionWithProfile = z.infer<typeof submissionWithProfileSchema>;
+
+export async function getAssignmentSubmissionsService(
+  supabase: SupabaseClient,
+  assignmentId: string,
+  instructorId: string,
+): Promise<
+  HandlerResult<AssignmentSubmissionsResponse, AssignmentSubmissionsErrorCode>
+> {
+  const { data: assignmentRaw, error: assignmentError } = await supabase
+    .from('assignments')
+    .select(
+      `
+        id,
+        title,
+        course_id,
+        courses!assignments_course_id_fkey(
+          instructor_id
+        )
+      `,
+    )
+    .eq('id', assignmentId)
+    .single();
+
+  if (assignmentError || !assignmentRaw) {
+    return failure(404, 'ASSIGNMENT_NOT_FOUND', '과제를 찾을 수 없습니다.');
+  }
+
+  const assignmentParseResult = assignmentWithCourseSchema.safeParse(assignmentRaw);
+
+  if (!assignmentParseResult.success) {
+    return failure(500, 'INTERNAL_ERROR', '과제 정보를 확인할 수 없습니다.');
+  }
+
+  const assignment = assignmentParseResult.data;
+
+  if (assignment.courses.instructor_id !== instructorId) {
+    return failure(403, 'UNAUTHORIZED', '해당 과제를 조회할 권한이 없습니다.');
+  }
+
+  const { data: submissionsRaw, error: submissionsError } = await supabase
+    .from('submissions')
+    .select(
+      `
+        id,
+        assignment_id,
+        learner_id,
+        submitted_at,
+        status,
+        score,
+        is_late,
+        feedback,
+        profiles!submissions_learner_id_fkey(
+          name
+        )
+      `,
+    )
+    .eq('assignment_id', assignmentId)
+    .order('submitted_at', { ascending: false });
+
+  if (submissionsError) {
+    return failure(500, 'INTERNAL_ERROR', '제출물 목록을 가져올 수 없습니다.');
+  }
+
+  const parsedSubmissionsResult = z
+    .array(submissionWithProfileSchema)
+    .safeParse(submissionsRaw ?? []);
+
+  if (!parsedSubmissionsResult.success) {
+    return failure(500, 'INTERNAL_ERROR', '제출물 데이터를 확인할 수 없습니다.');
+  }
+
+  const submissions = parsedSubmissionsResult.data;
+
+  const response = {
+    assignment: {
+      id: assignment.id,
+      title: assignment.title,
+      course_id: assignment.course_id,
+    },
+    submissions: submissions.map((submission: SubmissionWithProfile) => ({
+      id: submission.id,
+      assignment_id: submission.assignment_id,
+      learner_id: submission.learner_id,
+      learner_name: submission.profiles.name,
+      submitted_at: submission.submitted_at,
+      status: submission.status,
+      score: submission.score,
+      is_late: submission.is_late,
+      feedback: submission.feedback,
+    })),
+  } satisfies AssignmentSubmissionsResponse;
+
+  const validation = assignmentSubmissionsResponseSchema.safeParse(response);
+
+  if (!validation.success) {
+    return failure(500, 'INTERNAL_ERROR', '응답 데이터 검증에 실패했습니다.');
+  }
+
+  return success(validation.data, 200);
+}
 
 export async function gradeSubmissionService(
   supabase: SupabaseClient,

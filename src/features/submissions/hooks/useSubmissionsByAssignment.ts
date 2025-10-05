@@ -1,0 +1,43 @@
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient, extractApiErrorMessage } from '@/lib/remote/api-client';
+import { useToast } from '@/hooks/use-toast';
+import type { AssignmentSubmissionsResponse } from '../lib/dto';
+
+export const useSubmissionsByAssignment = (assignmentId: string) => {
+  const { toast } = useToast();
+
+  const queryResult = useQuery<
+    AssignmentSubmissionsResponse,
+    Error,
+    AssignmentSubmissionsResponse,
+    [string, string]
+  >({
+    queryKey: ['submissions', assignmentId],
+    queryFn: async () => {
+      const response = await apiClient.get<{ data: AssignmentSubmissionsResponse }>(
+        `/api/assignments/${assignmentId}/submissions`,
+      );
+
+      return response.data.data;
+    },
+    enabled: Boolean(assignmentId),
+    staleTime: 60_000,
+    retry: 1,
+  });
+
+  useEffect(() => {
+    if (queryResult.error) {
+      toast({
+        title: '제출물 조회 실패',
+        description: extractApiErrorMessage(
+          queryResult.error,
+          '제출물 목록을 불러오지 못했습니다.',
+        ),
+        variant: 'destructive',
+      });
+    }
+  }, [queryResult.error, toast]);
+
+  return queryResult;
+};
