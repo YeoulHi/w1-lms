@@ -5,6 +5,7 @@ import { withSupabase } from '@/backend/middleware/supabase';
 import { registerExampleRoutes } from '@/features/example/backend/route';
 import { registerAuthRoutes } from '@/features/auth/backend/route';
 import { registerEnrollmentsRoutes } from '@/features/enrollments/backend/route';
+import { registerCoursesRoutes } from '@/features/courses/backend/route';
 import type { AppEnv } from '@/backend/hono/context';
 
 let singletonApp: Hono<AppEnv> | null = null;
@@ -23,6 +24,7 @@ export const createHonoApp = () => {
   registerExampleRoutes(app);
   registerAuthRoutes(app);
   registerEnrollmentsRoutes(app);
+  registerCoursesRoutes(app);
 
   singletonApp = app;
 
