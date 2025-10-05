@@ -9,6 +9,7 @@ export const useCurrentUser = () => {
   return useMemo(
     () => ({
       user: context.user,
+      session: context.session,
       status: context.status,
       isAuthenticated: context.isAuthenticated,
       isLoading: context.isLoading,

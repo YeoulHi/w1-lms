@@ -13,15 +13,19 @@ const mapUser = (user: User) => ({
 
 export const loadCurrentUser = async (): Promise<CurrentUserSnapshot> => {
   const supabase = await createSupabaseServerClient();
-  const result = await supabase.auth.getUser();
-  const user = result.data.user;
+  const [userResult, sessionResult] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.auth.getSession(),
+  ]);
+  const user = userResult.data.user;
 
   if (user) {
     return {
       status: "authenticated",
       user: mapUser(user),
+      session: sessionResult.data.session,
     };
   }
 
-  return { status: "unauthenticated", user: null };
+  return { status: "unauthenticated", user: null, session: null };
 };

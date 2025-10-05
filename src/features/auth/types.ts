@@ -6,9 +6,9 @@ export type CurrentUser = {
 };
 
 export type CurrentUserSnapshot =
-  | { status: "authenticated"; user: CurrentUser }
-  | { status: "unauthenticated"; user: null }
-  | { status: "loading"; user: CurrentUser | null };
+  | { status: "authenticated"; user: CurrentUser; session: any }
+  | { status: "unauthenticated"; user: null; session: null }
+  | { status: "loading"; user: CurrentUser | null; session: any };
 
 export type CurrentUserContextValue = CurrentUserSnapshot & {
   refresh: () => Promise<void>;

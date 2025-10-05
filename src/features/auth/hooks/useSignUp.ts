@@ -32,7 +32,7 @@ export const useSignUp = () => {
       if (data.role === 'learner') {
         router.push('/');
       } else if (data.role === 'instructor') {
-        router.push('/instructor/dashboard');
+        router.push('/dashboard');
       }
     },
     onError: (error: Error) => {

@@ -31,13 +31,16 @@ export const CurrentUserProvider = ({
   const [snapshot, setSnapshot] = useState<CurrentUserSnapshot>(initialState);
 
   const refresh = useCallback(async () => {
-    setSnapshot((prev) => ({ status: "loading", user: prev.user }));
+    setSnapshot((prev) => ({ status: "loading", user: prev.user, session: prev.session }));
     const supabase = getSupabaseBrowserClient();
 
     try {
-      const result = await supabase.auth.getUser();
+      const [userResult, sessionResult] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.auth.getSession(),
+      ]);
 
-      const nextSnapshot = match(result)
+      const nextSnapshot = match(userResult)
         .with({ data: { user: P.nonNullable } }, ({ data }) => ({
           status: "authenticated" as const,
           user: {
@@ -46,8 +49,9 @@ export const CurrentUserProvider = ({
             appMetadata: data.user.app_metadata ?? {},
             userMetadata: data.user.user_metadata ?? {},
           },
+          session: sessionResult.data.session,
         }))
-        .otherwise(() => ({ status: "unauthenticated" as const, user: null }));
+        .otherwise(() => ({ status: "unauthenticated" as const, user: null, session: null }));
 
       setSnapshot(nextSnapshot);
       queryClient.setQueryData(["currentUser"], nextSnapshot);
@@ -55,6 +59,7 @@ export const CurrentUserProvider = ({
       const fallbackSnapshot: CurrentUserSnapshot = {
         status: "unauthenticated",
         user: null,
+        session: null,
       };
       setSnapshot(fallbackSnapshot);
       queryClient.setQueryData(["currentUser"], fallbackSnapshot);
