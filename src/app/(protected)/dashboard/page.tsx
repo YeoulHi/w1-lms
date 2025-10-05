@@ -1,7 +1,8 @@
 "use client";
 
-import Image from "next/image";
+import Link from "next/link";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { Button } from "@/components/ui/button";
 
 type DashboardPageProps = {
   params: Promise<Record<string, never>>;
@@ -11,6 +12,22 @@ export default function DashboardPage({ params }: DashboardPageProps) {
   void params;
   const { user } = useCurrentUser();
 
+  // TODO: 실제 API 구현 시 교체 (최소 복잡도 원칙)
+  const publishedCourses = [
+    {
+      id: "4d4afc25-454c-4ba6-be57-4edab32f9049",
+      title: "Next.js 15 마스터 클래스",
+      description: "App Router, Server Actions, React Server Components를 마스터합니다.",
+      status: "published",
+    },
+    {
+      id: "ba742c67-4461-4499-a143-2113e459747e",
+      title: "TypeScript 심화 과정",
+      description: "Type-safe 백엔드 API 설계와 Zod 스키마 활용법을 배웁니다.",
+      status: "published",
+    },
+  ];
+
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6 px-6 py-12">
       <header className="space-y-2">
@@ -19,29 +36,25 @@ export default function DashboardPage({ params }: DashboardPageProps) {
           {user?.email ?? "알 수 없는 사용자"} 님, 환영합니다.
         </p>
       </header>
-      <div className="overflow-hidden rounded-xl border border-slate-200">
-        <Image
-          alt="대시보드"
-          src="https://picsum.photos/seed/dashboard/960/420"
-          width={960}
-          height={420}
-          className="h-auto w-full object-cover"
-        />
-      </div>
-      <section className="grid gap-4 md:grid-cols-2">
-        <article className="rounded-lg border border-slate-200 p-4">
-          <h2 className="text-lg font-medium">현재 세션</h2>
-          <p className="mt-2 text-sm text-slate-500">
-            Supabase 미들웨어가 세션 쿠키를 자동으로 동기화합니다.
-          </p>
-        </article>
-        <article className="rounded-lg border border-slate-200 p-4">
-          <h2 className="text-lg font-medium">보안 체크</h2>
-          <p className="mt-2 text-sm text-slate-500">
-            보호된 App Router 세그먼트로 라우팅되며, 로그인 사용
-            자만 접근할 수 있습니다.
-          </p>
-        </article>
+
+      <section className="space-y-4">
+        <h2 className="text-2xl font-semibold">수강 가능한 코스</h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          {publishedCourses.map((course) => (
+            <article
+              key={course.id}
+              className="rounded-lg border border-slate-200 p-6 space-y-4"
+            >
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">{course.title}</h3>
+                <p className="text-sm text-slate-600">{course.description}</p>
+              </div>
+              <Link href={`/courses/${course.id}`}>
+                <Button className="w-full">코스 수강신청</Button>
+              </Link>
+            </article>
+          ))}
+        </div>
       </section>
     </div>
   );
