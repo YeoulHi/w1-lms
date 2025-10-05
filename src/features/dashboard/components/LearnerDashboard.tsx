@@ -45,9 +45,14 @@ export const LearnerDashboard = () => {
                 <h3 className="text-lg font-semibold">{course.title}</h3>
                 <p className="text-sm text-slate-600">{course.description}</p>
               </div>
-              <Link href={`/courses/${course.id}`}>
-                <Button className="w-full">코스 수강신청</Button>
-              </Link>
+              <div className="flex gap-2">
+                <Link href={`/courses/${course.id}`} className="flex-1">
+                  <Button className="w-full">코스 수강신청</Button>
+                </Link>
+                <Link href={`/courses/${course.id}/grades`} className="flex-1">
+                  <Button variant="outline" className="w-full">성적 보기</Button>
+                </Link>
+              </div>
             </article>
           ))}
         </div>

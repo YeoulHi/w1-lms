@@ -2,7 +2,6 @@ import type { Hono } from 'hono';
 import {
   failure,
   respond,
-  type ErrorResult,
 } from '@/backend/http/response';
 import {
   getConfig,
@@ -11,23 +10,17 @@ import {
 } from '@/backend/hono/context';
 import { createAnonClient } from '@/backend/supabase/client';
 import { CreateCourseRequestSchema } from '@/features/courses/backend/schema';
+import { coursesErrorCodes } from './error';
+import { getGradesForCourse } from './grades.service';
 import { createCourseService } from './service';
-import {
-  coursesErrorCodes,
-  type CoursesServiceError,
-} from './error';
 
 export const registerCoursesRoutes = (app: Hono<AppEnv>) => {
   app.post('/courses', async (c) => {
     const logger = getLogger(c);
     const config = getConfig(c);
 
-    // Extract access token from Authorization header
     const authHeader = c.req.header('Authorization');
     const accessToken = authHeader?.replace('Bearer ', '');
-
-    logger.info('[Courses] Authorization header:', authHeader ? 'Present' : 'Missing');
-    logger.info('[Courses] Access token:', accessToken ? `${accessToken.substring(0, 20)}...` : 'Missing');
 
     if (!accessToken) {
       return respond(
@@ -35,41 +28,31 @@ export const registerCoursesRoutes = (app: Hono<AppEnv>) => {
         failure(
           401,
           coursesErrorCodes.unauthorized,
-          '인증 토큰이 필요합니다.',
+          'Authentication token is required.',
         ),
       );
     }
 
-    // Create anon client with user's access token
     const supabase = createAnonClient({
       url: config.supabase.url,
       anonKey: config.supabase.anonKey,
       accessToken,
     });
 
-    // Get authenticated user from Supabase
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    logger.info('[Courses] Auth result:', { user: user ? user.id : null, error: authError?.message });
+    const { data: authResult, error: authError } = await supabase.auth.getUser();
+    const user = authResult?.user;
 
     if (authError || !user) {
-      logger.error('[Courses] Authentication failed:', authError?.message || 'No user');
       return respond(
         c,
         failure(
           401,
           coursesErrorCodes.unauthorized,
-          '인증되지 않은 사용자입니다.',
+          'Invalid authentication token.',
         ),
       );
     }
 
-    logger.info('[Courses] User authenticated:', user.id);
-
-    // Check if user is an instructor
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
@@ -77,18 +60,17 @@ export const registerCoursesRoutes = (app: Hono<AppEnv>) => {
       .single();
 
     if (profileError || !profile) {
-      logger.error('Failed to fetch user profile', profileError?.message);
+      logger.error('Failed to load instructor profile', profileError);
+
       return respond(
         c,
         failure(
           500,
           coursesErrorCodes.unauthorized,
-          '사용자 프로필을 확인할 수 없습니다.',
+          'Failed to load instructor profile.',
         ),
       );
     }
-
-    logger.info('[Courses] User role:', profile.role);
 
     if (profile.role !== 'instructor') {
       return respond(
@@ -96,7 +78,7 @@ export const registerCoursesRoutes = (app: Hono<AppEnv>) => {
         failure(
           403,
           coursesErrorCodes.unauthorized,
-          '강사만 강의를 생성할 수 있습니다.',
+          'Only instructors can create courses.',
         ),
       );
     }
@@ -122,17 +104,51 @@ export const registerCoursesRoutes = (app: Hono<AppEnv>) => {
       parsedBody.data,
     );
 
-    if (!result.ok) {
-      const errorResult = result as ErrorResult<CoursesServiceError, unknown>;
+    return respond(c, result);
+  });
 
-      if (errorResult.error.code === coursesErrorCodes.courseCreationError) {
-        logger.error('Failed to create course', errorResult.error.message);
-      }
+  app.get('/courses/:courseId/grades', async (c) => {
+    const logger = getLogger(c);
+    const config = getConfig(c);
+    const courseId = c.req.param('courseId');
 
-      return respond(c, result);
+    if (!courseId) {
+      return respond(
+        c,
+        failure(400, 'COURSE_ID_REQUIRED', 'Course id is required.'),
+      );
     }
 
-    logger.info('[Courses] Course created successfully');
+    const authHeader = c.req.header('Authorization');
+    const accessToken = authHeader?.replace('Bearer ', '');
+
+    if (!accessToken) {
+      return respond(
+        c,
+        failure(401, 'UNAUTHORIZED', 'Authentication token is required.'),
+      );
+    }
+
+    const supabase = createAnonClient({
+      url: config.supabase.url,
+      anonKey: config.supabase.anonKey,
+      accessToken,
+    });
+
+    const { data: authResult, error: authError } = await supabase.auth.getUser();
+    const user = authResult?.user;
+
+    if (authError || !user) {
+      return respond(
+        c,
+        failure(401, 'UNAUTHORIZED', 'Invalid authentication token.'),
+      );
+    }
+
+    logger.info(`grades:list user=${user.id} course=${courseId}`);
+
+    const result = await getGradesForCourse(supabase, courseId, user.id);
+
     return respond(c, result);
   });
 };
