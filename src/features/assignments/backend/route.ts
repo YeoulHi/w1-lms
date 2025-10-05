@@ -5,18 +5,37 @@ import {
   type ErrorResult,
 } from '@/backend/http/response';
 import {
+  getConfig,
   getLogger,
-  getSupabase,
   type AppEnv,
 } from '@/backend/hono/context';
+import { createAnonClient } from '@/backend/supabase/client';
 import { submitAssignmentRequestSchema } from './submissions.schema';
 import { submitAssignmentService } from './submissions.service';
 
 export const registerAssignmentsRoutes = (app: Hono<AppEnv>) => {
   app.post('/assignments/:assignmentId/submissions', async (c) => {
-    const supabase = getSupabase(c);
     const logger = getLogger(c);
+    const config = getConfig(c);
     const assignmentId = c.req.param('assignmentId');
+
+    // Extract access token from Authorization header
+    const authHeader = c.req.header('Authorization');
+    const accessToken = authHeader?.replace('Bearer ', '');
+
+    if (!accessToken) {
+      return respond(
+        c,
+        failure(401, 'UNAUTHORIZED', '인증 토큰이 필요합니다.'),
+      );
+    }
+
+    // Create anon client with user's access token
+    const supabase = createAnonClient({
+      url: config.supabase.url,
+      anonKey: config.supabase.anonKey,
+      accessToken,
+    });
 
     // Get authenticated user from Supabase
     const {
@@ -25,6 +44,7 @@ export const registerAssignmentsRoutes = (app: Hono<AppEnv>) => {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      logger.error('Auth error:', authError?.message || 'No user found');
       return respond(
         c,
         failure(401, 'UNAUTHORIZED', '인증되지 않은 사용자입니다.'),
