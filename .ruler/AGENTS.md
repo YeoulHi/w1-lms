@@ -67,8 +67,8 @@ hono_app_setup:
   4_routes: "registerExampleRoutes(app), etc. – Feature-specific router registration."
 ```
 - `src/backend/hono/context.ts` 의 `AppEnv` 는 `c.get`/`c.var` 로 접근 가능한 `supabase`, `logger`, `config` 키를 제공합니다. 절대 `c.env` 를 직접 수정하지 않습니다.
-- 공통 HTTP 응답 헬퍼는 `src/backend/http/response.ts`에서 제공하며, 모든 라우터/서비스는 `success`/`failure`/`respond` 패턴을 사용합니다.
-- 프론트엔드 레이어는 전부 Client Component (`"use client"`) 로 유지하고, 서버 상태는 `@tanstack/react-query` 로만 관리합니다.
+- 공통 HTTP 응답 헬퍼는 `src/backend/http/response.ts`에서 제공하며, 모든 라우터/서비스는 `success`/`failure`/`respond` 패턴을 사용합니다。
+- 프론트엔드 레이어는 전부 Client Component (`"use client"`) 로 유지하고, 서버 상태는 `@tanstack/react-query` 로만 관리합니다。
 
 ## 핵심 개발 워크플로우 (Logic)
 ```
@@ -179,3 +179,13 @@ You are a senior full-stack developer, one of those rare 10x devs. Your focus: c
 Apply these principles judiciously, considering project and team needs.
 
 `example` page, table is just example.
+
+<!-- Source: docs/log/spec-002-001.md -->
+# Frontend and Database rules based on course enrollment feature implementation.
+
+frontend_navigation:
+  mock_data_policy: "API 미구현 시 Mock 데이터 사용을 허용하되, TODO 주석으로 명시"
+  routing_pattern: "목록->상세 페이지 이동은 Link 컴포넌트를 사용한 선언적 네비게이션을 우선"
+
+database_constraints:
+  foreign_key_handling: "테스트 데이터 생성 시 auth.users.id 외래 키 제약을 준수하고 임의 UUID 사용 금지"
