@@ -1,50 +1,18 @@
 # Frontend Conventions
 
 ## DTO Pattern
+- **Purpose**: Share types between Frontend & Backend.
+- **Method**: Re-export from `backend/schema.ts`.
 
-```yaml
-dto_pattern:
-  purpose: "Share types between FE/BE"
-  method: "Re-export from backend/schema.ts"
-```
+## Hook Pattern (React Query)
+- **Mutations**: Use `useMutation` for POST/PUT/DELETE. On success, show toast and redirect. On error, show toast.
+- **Queries**: Use `useQuery` for GET. Set `staleTime` to 1 minute. Use `enabled: Boolean(id)` for conditional fetching.
 
-## Hook Pattern
-
-```yaml
-hook_pattern:
-  library: "React Query (@tanstack/react-query)"
-  mutations:
-    - "useMutation for POST/PUT/DELETE"
-    - "onSuccess: toast + redirect"
-    - "onError: toast error message"
-  queries:
-    - "useQuery for GET"
-    - "staleTime: 60000 (1min)"
-    - "enabled: Boolean(id)"
-```
-
-## Form Pattern
-
-```yaml
-form_pattern:
-  validation: "react-hook-form + zodResolver"
-  ui: "shadcn-ui components"
-  structure:
-    - "FormField for each input"
-    - "FormControl + FormMessage"
-    - "Button with isPending state"
-```
+## Form Pattern (React Hook Form)
+- **Validation**: Use `react-hook-form` with `zodResolver`.
+- **UI**: Use `shadcn-ui` components.
+- **Structure**: `FormField` -> `FormControl` + `FormMessage`. Show pending state on `Button`.
 
 ## Naming Conventions
-
-```yaml
-files:
-  components: "PascalCase.tsx"
-  hooks: "use{Action}.ts"
-
-variables:
-  components: "PascalCase"
-  functions: "camelCase"
-  constants: "UPPER_SNAKE_CASE"
-  types: "PascalCase"
-```
+- **Files**: `PascalCase.tsx` (Components), `use{Action}.ts` (Hooks).
+- **Variables**: `PascalCase` (Components, Types), `camelCase` (Functions), `UPPER_SNAKE_CASE` (Constants).

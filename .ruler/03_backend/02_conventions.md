@@ -1,118 +1,31 @@
 # Backend Conventions
 
 ## Service Pattern
-
-```yaml
-service_pattern:
-  return_type: "HandlerResult<Data, ErrorCode, Details>"
-  helpers:
-    success: "success(data, status?)"
-    failure: "failure(status, code, message, details?)"
-  transaction:
-    atomic: true
-    rollback: "Delete created records on failure"
-  validation:
-    - "Validate DB responses with schemas"
-    - "Use safeParse() for type safety"
-  creation_defaults:
-    - "Service layer sets system-generated values on creation (e.g., owner_id, default status like 'draft')."
-    - "These values must not be part of the request schema from the client."
-```
+- **Return Type**: `HandlerResult<Data, ErrorCode, Details>`.
+- **Helpers**: Use `success(data)` and `failure(status, code, message)`.
+- **Transactions**: Ensure atomicity. Roll back changes on failure.
+- **Validation**: Validate DB responses with Zod's `safeParse()`.
+- **Defaults**: The service layer, not the client, sets system-generated values (e.g., `owner_id`, `status`).
 
 ## Route Pattern
-
-```yaml
-route_pattern:
-  validation: "safeParse() request body/params"
-  response: "respond(c, result)"
-  logging: "Log errors with getLogger(c)"
-  registration: "registerAuthRoutes(app) in createHonoApp()"
-  authorization:
-    - "Role-based access control must be enforced at the route/middleware layer, before calling the service."
-```
+- **Validation**: Use `safeParse()` for request bodies/params.
+- **Response**: Use the `respond(c, result)` helper.
+- **Authorization**: Enforce role-based access control at the route layer, before the service is called.
 
 ## Authentication Pattern
 
-```yaml
-authentication_pattern:
-  user_request_handling:
-    method: "Anon Client + Access Token"
-    steps:
-      1: "Extract access token from Authorization header"
-      2: "Create anon client with createAnonClient({ url, anonKey, accessToken })"
-      3: "Call supabase.auth.getUser() to authenticate"
-      4: "Return 401 if authentication fails"
-      5: "Pass authenticated user.id to service layer"
-    use_cases:
-      - "Course creation by instructors"
-      - "Enrollment by learners"
-      - "Assignment submission"
-      - "All user-initiated actions requiring authentication"
-    pattern: |
-      const authHeader = c.req.header('Authorization');
-      const accessToken = authHeader?.replace('Bearer ', '');
+- **User Requests (e.g., course enrollment, submissions)**:
+  1.  Use **Anon Client + User Access Token**.
+  2.  Extract token from `Authorization` header.
+  3.  Create `createAnonClient` with the user's token.
+  4.  Authenticate with `supabase.auth.getUser()`.
+  5.  Return 401 on failure.
 
-      if (!accessToken) {
-        return respond(c, failure(401, 'UNAUTHORIZED', '인증 토큰이 필요합니다.'));
-      }
+- **Admin Operations (e.g., user signup, system tasks)**:
+  1.  Use **Service Role Client** (`c.get('supabase')`).
+  2.  This client has full admin access and bypasses RLS.
 
-      const supabase = createAnonClient({
-        url: config.supabase.url,
-        anonKey: config.supabase.anonKey,
-        accessToken,
-      });
-
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-
-      if (authError || !user) {
-        return respond(c, failure(401, 'UNAUTHORIZED', '인증되지 않은 사용자입니다.'));
-      }
-
-  admin_operation_handling:
-    method: "Service Role Client (c.get('supabase'))"
-    use_cases:
-      - "User signup (createUser in auth.admin)"
-      - "System initialization"
-      - "Background jobs"
-      - "Admin-only operations bypassing RLS"
-    limitation: "CANNOT authenticate user JWT tokens"
-    pattern: |
-      const supabase = c.get('supabase'); // Service Role Key client
-
-      // Admin operations only
-      const { data, error } = await supabase.auth.admin.createUser({
-        email, password, email_confirm: true
-      });
-
-  client_comparison:
-    service_role:
-      key_type: "Service Role Key"
-      permissions: "Full admin access, bypasses RLS"
-      user_auth: "❌ Cannot authenticate user JWT"
-      use_for: "Admin operations, background jobs"
-      security: "NEVER expose to client"
-    anon_with_token:
-      key_type: "Anon Key + User JWT Token"
-      permissions: "User-level access, RLS enforced"
-      user_auth: "✅ Can authenticate via auth.getUser()"
-      use_for: "User-initiated requests"
-      security: "Safe (Anon Key is public, JWT is user-specific)"
-
-  critical_rules:
-    - "NEVER use Service Role client (c.get('supabase')) for user authentication"
-    - "ALWAYS extract Authorization header for user requests"
-    - "ALWAYS use createAnonClient with access token for user operations"
-    - "Service Role client is for admin operations ONLY"
-    - "Follow existing patterns in src/features/courses/backend/route.ts"
-```
-
-## Naming Conventions
-
-```yaml
-files:
-  schemas: "kebab-case.ts"
-
-routes:
-  hono: "/resource" or "/resource/:id"
-  nextjs: "[[...hono]]" for catch-all
-```
+### Critical Auth Rules
+- **NEVER** use the Service Role client (`c.get('supabase')`) to authenticate user requests.
+- **ALWAYS** use the Anon Client with a user's access token for user-initiated actions.
+- The Service Role client is for **admin operations ONLY**.

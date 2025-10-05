@@ -1,52 +1,17 @@
----
-description: Supabase Migration SQL Guideline
-globs: supabase/migrations/*.sql
----
-
-# Supabase Migration SQL Guideline
+# Supabase Migration SQL Guidelines
 
 ## Must
-
-- Each migration file must have a unique name with number prefix (e.g., `0001_create_users_table.sql`)
-- Each migration must be idempotent (can be run multiple times without error)
-- Use `CREATE TABLE IF NOT EXISTS` instead of just `CREATE TABLE`
-- Include proper error handling with `BEGIN` and `EXCEPTION` blocks
-- Add comments for complex operations
-- Always specify column types explicitly
-- Include proper constraints (NOT NULL, UNIQUE, etc.) where appropriate
-- Add updated_at column to all tables, and use trigger to update it
-- always check other migrations to avoid conflicts
+- **Unique, Numbered Names**: `0001_create_users.sql`.
+- **Idempotent**: Use `CREATE TABLE IF NOT EXISTS`.
+- **Constraints**: Use `NOT NULL`, `UNIQUE`, etc.
+- **`updated_at` Column**: Add to all tables with a trigger.
+- **No RLS**: Disable RLS for all tables (`disable row level security`).
 
 ## Should
-
-- Keep migrations small
-- Use consistent naming conventions for tables and columns
-- Use snake_case for all identifiers
-- Document breaking changes
-- MUST NOT use RLS. disable it for all tables
+- **Small Migrations**: Keep changes minimal.
+- **`snake_case`**: Use for all identifiers.
 
 ## Recommended Patterns
-
-- Set up proper indexes for frequently queried columns
-- Use foreign key constraints to maintain referential integrity
-- Leverage Postgres extensions when appropriate
-- Use enums for fields with a fixed set of values
-- Consider using views for complex queries
-
-## Schema Organization
-
-- Group related tables together
-- Use schemas to organize tables by domain
-- Consider using Postgres schemas for multi-tenant applications
-- Keep authentication tables in the auth schema
-
-## Performance Considerations
-
-- Avoid adding/removing columns from large tables in production
-- Use appropriate data types to minimize storage
-- Add indexes strategically (not excessively)
-
-## Security Best Practices
-
-- Never store plaintext passwords
-- Sanitize/validate all user inputs
+- **Indexes**: Add for frequently queried columns.
+- **Foreign Keys**: Maintain referential integrity.
+- **Enums**: Use for fields with a fixed set of values.
