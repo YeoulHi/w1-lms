@@ -92,6 +92,51 @@ supabase_errors:
   rollback_failed:
     cause: "Transaction not atomic"
     fix: "Manual cleanup in catch block"
+
+  user_authentication_401:
+    symptom: "POST /api/{route} → 401 Unauthorized (user requests)"
+
+    checklist:
+      client_type:
+        - "✓ Using Service Role client (c.get('supabase')) instead of Anon client?"
+        - "✓ Service Role client CANNOT authenticate user JWT tokens"
+        - "✓ Check if route extracts Authorization header?"
+
+      token_extraction:
+        - "✓ Authorization header present in request (Network tab)?"
+        - "✓ Access token extracted with authHeader?.replace('Bearer ', '')?"
+        - "✓ Check if accessToken is passed to createAnonClient()?"
+
+      client_creation:
+        - "✓ Using createAnonClient({ url, anonKey, accessToken })?"
+        - "✓ Anon Key (not Service Role Key) used in createAnonClient()?"
+        - "✓ accessToken parameter provided?"
+
+      auth_call:
+        - "✓ Calling supabase.auth.getUser() on Anon client?"
+        - "✓ Checking for authError and null user?"
+
+    root_cause: "Service Role client cannot authenticate user JWT tokens"
+
+    solution: |
+      // ✅ Correct pattern
+      const authHeader = c.req.header('Authorization');
+      const accessToken = authHeader?.replace('Bearer ', '');
+
+      if (!accessToken) {
+        return respond(c, failure(401, 'UNAUTHORIZED', '인증 토큰이 필요합니다.'));
+      }
+
+      const supabase = createAnonClient({
+        url: config.supabase.url,
+        anonKey: config.supabase.anonKey,
+        accessToken, // ← User's JWT token
+      });
+
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+    reference: "See src/features/courses/backend/route.ts for correct implementation"
+    documentation: "docs/log/spec-004-001-enrollment-401-fix.md"
 ```
 
 ## Dev Tools Usage
