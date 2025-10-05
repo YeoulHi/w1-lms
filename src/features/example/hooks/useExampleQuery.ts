@@ -1,4 +1,4 @@
-'use client';
+ㅞ'use client';
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient, extractApiErrorMessage } from '@/lib/remote/api-client';

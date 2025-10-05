@@ -19,7 +19,7 @@ export const useSubmissionsByAssignment = (assignmentId: string) => {
         `/api/assignments/${assignmentId}/submissions`,
       );
 
-      return response.data.data;
+      return response.data.data || response.data;
     },
     enabled: Boolean(assignmentId),
     staleTime: 60_000,
