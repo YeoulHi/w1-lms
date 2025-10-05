@@ -19,3 +19,30 @@
     const form = useForm();
     const { mutate } = useHook(() => form.reset());
     ```
+
+4.  **UI Feedback Essentials**: For every user action, provide clear feedback for all possible states.
+
+    - **Loading State**: Disable buttons and show a pending message during async operations.
+      ```tsx
+      <Button disabled={isPending}>
+        {isPending ? 'Submitting...' : 'Submit'}
+      </Button>
+      ```
+
+    - **Success Feedback**: Show a toast message on successful completion.
+      ```typescript
+      onSuccess: () => {
+        toast({ title: 'Success!', description: 'Your action was completed.' });
+      }
+      ```
+
+    - **Error Feedback**: Show a destructive toast with a clear error message on failure.
+      ```typescript
+      onError: (error) => {
+        toast({
+          title: 'Action Failed',
+          description: extractApiErrorMessage(error),
+          variant: 'destructive',
+        });
+      }
+      ```
