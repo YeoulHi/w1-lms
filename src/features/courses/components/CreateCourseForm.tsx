@@ -16,8 +16,6 @@ import {
 } from '@/components/ui/form';
 
 export function CreateCourseForm() {
-  const { mutate, isPending } = useCreateCourse();
-
   const form = useForm<CreateCourseRequest>({
     resolver: zodResolver(CreateCourseRequestSchema),
     defaultValues: {
@@ -25,12 +23,12 @@ export function CreateCourseForm() {
     },
   });
 
+  const { mutate, isPending } = useCreateCourse(() => {
+    form.reset();
+  });
+
   const onSubmit = (data: CreateCourseRequest) => {
-    mutate(data, {
-      onSuccess: () => {
-        form.reset();
-      },
-    });
+    mutate(data);
   };
 
   return (

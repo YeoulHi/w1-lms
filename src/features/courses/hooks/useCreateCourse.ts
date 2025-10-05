@@ -15,7 +15,7 @@ const createCourse = async (body: CreateCourseRequest) => {
   }
 };
 
-export const useCreateCourse = () => {
+export const useCreateCourse = (onSuccessCallback?: () => void) => {
   const { toast } = useToast();
 
   return useMutation({
@@ -25,6 +25,7 @@ export const useCreateCourse = () => {
         title: '성공',
         description: '강의가 성공적으로 생성되었습니다.',
       });
+      onSuccessCallback?.();
     },
     onError: (error: Error) => {
       toast({
