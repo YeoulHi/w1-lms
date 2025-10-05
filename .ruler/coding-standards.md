@@ -9,6 +9,7 @@ file_structure:
     service: "src/features/{feature}/backend/service.ts"
     route: "src/features/{feature}/backend/route.ts"
     error: "src/features/{feature}/backend/error.ts"
+    error: "src/features/{feature}/backend/error.ts"
 
 schema_pattern:
   validation: "Zod"
@@ -35,12 +36,17 @@ service_pattern:
   creation_defaults:
     - "Service layer sets system-generated values on creation (e.g., owner_id, default status like 'draft')."
     - "These values must not be part of the request schema from the client."
+  creation_defaults:
+    - "Service layer sets system-generated values on creation (e.g., owner_id, default status like 'draft')."
+    - "These values must not be part of the request schema from the client."
 
 route_pattern:
   validation: "safeParse() request body/params"
   response: "respond(c, result)"
   logging: "Log errors with getLogger(c)"
   registration: "registerAuthRoutes(app) in createHonoApp()"
+  authorization:
+    - "Role-based access control must be enforced at the route/middleware layer, before calling the service."
   authorization:
     - "Role-based access control must be enforced at the route/middleware layer, before calling the service."
 ```
