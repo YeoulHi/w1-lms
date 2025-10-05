@@ -27,7 +27,11 @@ const copyCookies = (from: NextResponse, to: NextResponse) => {
 };
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next({ request });
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
   const supabase = createServerClient<Database>(
     env.NEXT_PUBLIC_SUPABASE_URL,
@@ -37,11 +41,23 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set({ name, value, ...options });
-            response.cookies.set({ name, value, ...options });
+        set(name, value, options) {
+          request.cookies.set({ name, value, ...options });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
           });
+          response.cookies.set({ name, value, ...options });
+        },
+        remove(name, options) {
+          request.cookies.set({ name, value: "", ...options });
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          response.cookies.set({ name, value: "", ...options });
         },
       },
     }
@@ -60,7 +76,7 @@ export async function middleware(request: NextRequest) {
         loginUrl.pathname = LOGIN_PATH;
         loginUrl.searchParams.set("redirectedFrom", pathname);
 
-        return copyCookies(response, NextResponse.redirect(loginUrl));
+        return NextResponse.redirect(loginUrl);
       }
     )
     .otherwise(() => response);
