@@ -100,11 +100,21 @@ export const InstructorDashboard = () => {
                     {course.description || '설명이 없습니다.'}
                   </p>
                 </div>
-                <Link href={`/courses/${course.id}`}>
-                  <Button variant="outline" className="w-full">
-                    코스 관리
-                  </Button>
-                </Link>
+                <div className="flex gap-2">
+                  <Link href={`/courses/${course.id}`} className="flex-1">
+                    <Button variant="outline" className="w-full">
+                      코스 관리
+                    </Button>
+                  </Link>
+                  <Link
+                    href={`/instructor/courses/${course.id}/assignments`}
+                    className="flex-1"
+                  >
+                    <Button variant="outline" className="w-full">
+                      과제 관리
+                    </Button>
+                  </Link>
+                </div>
               </article>
             ))}
           </div>
